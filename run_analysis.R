@@ -16,57 +16,48 @@
   
   # Reading from the training and testing tables
   
-  x_train <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/train/X_train.txt")
-  y_train <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/train/y_train.txt")
-  subject_train <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/train/subject_train.txt")
+  X_train <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/train/X_train.txt")
+  Y_train <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/train/y_train.txt")
+  Subject_train <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/train/subject_train.txt")
   
-  x_test <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/test/X_test.txt")
-  y_test <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/test/y_test.txt")
-  subject_test <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/test/subject_test.txt")
+  X_test <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/test/X_test.txt")
+  Y_test <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/test/y_test.txt")
+  Subject_test <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/test/subject_test.txt")
   
   features <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/features.txt")
   activityLabels <- read.table("/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/activity_labels.txt")
   
-  # Assigning the column names
-  colnames(x_train)<-features[,2]
-  colnames(y_train)<-"activityId"
-  colnames(subject_train)<-"subjectId"
+  # 1. Merges the training and the test sets to create one data set.
   
-  colnames(x_test)<-features[,2]
-  colnames(y_test)<-"activityId"
-  colnames(subject_test)<-"subjectId"
+  X_total <- rbind(X_train, X_test)
+  Y_total <- rbind(Y_train, Y_test)
+  Sub_total <- rbind(Subject_train, Subject_test)
 
-  colnames(activityLabels)<-c("activityId","activityType")
   
- #Merging Data
-  all_train<-cbind(y_train,subject_train,x_train)
-  all_test<-cbind(y_test,subject_test,x_test)
-  mergall<-rbind(all_train,all_test)
-
-  # Reading Column Names
-  colNames<-colnames(mergall)
   
-  mean_and_sd<-(grepl("activityId",colNames)|
-                grepl("subjectId",colNames)|
-                grepl("mean..",colNames) |
-                grepl("std..",colNames)  
-                )
-  #Subsetting from mergall
+  # 2. Extracts only the measurements on the mean and standard deviation for each measurement.
+  selected_var <- features[grep("mean\\(\\)|std\\(\\)",features[,2]),]
+  X_total <- X_total[,selected_var[,1]]
   
-  get_mean_sd<-mergall[,mean_and_sd==TRUE]
   
-  # Naming Activity Names in the data set
+  # 3. Uses descriptive activity names to name the activities in the data set
   
-  setactivitynames<-merge(get_mean_sd,activityLabels, by="activityId",all.x = TRUE)
+  colnames(Y_total) <- "activity"
+  Y_total$activitylabel <- factor(Y_total$activity, labels = as.character(activityLabels[,2]))
+  activitylabel <- Y_total[,-1]
   
-  # Tidying the second and independent data set
+  # 4. Appropriately labels the data set with descriptive variable names.
   
-  tidyset<-aggregate(. ~subjectId+activityId, setactivitynames,mean)
-  tidyset<-tidyset[order(tidyset$subjectId,tidyset$activityId),]
+  colnames(X_total) <- features[selected_var[,1],2]
   
-  # writing second tidy set to txt file
-  write.table(tidyset,"tidyset.txt",row.name=FALSE)
   
+  # 5. From the data set in step 4, creates a second, independent tidy data set with the average
+  # of each variable for each activity and each subject.
+  
+  colnames(Sub_total) <- "subject"
+  total <- cbind(X_total, activitylabel, Sub_total)
+  total_mean <- total %>% group_by(activitylabel, subject) %>% summarise_all(funs(mean))
+  write.table(total_mean, file = "/home/priya/priya/DataScience- Courseera/workstation/activity/UCI HAR Dataset/tidydata.txt", row.names = FALSE, col.names = TRUE)
   
   
   
