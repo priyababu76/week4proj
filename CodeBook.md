@@ -1,4 +1,4 @@
-## This is a markdown file
+## 
 
 Tidy data set description
 The variables in the tidy data
